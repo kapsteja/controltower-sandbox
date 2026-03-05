@@ -1,0 +1,63 @@
+inputSet:
+  name: GitHarness
+  tags: {}
+  identifier: GitHarness
+  orgIdentifier: icd
+  projectIdentifier: cpe
+  pipeline:
+    identifier: scpsandboxattachments
+    stages:
+      - stage:
+          identifier: createworkspace
+          template:
+            templateInputs:
+              type: CI
+              variables:
+                - name: TF_API_TOKEN
+                  type: Secret
+                  value: tfc_icd_cf
+                - name: Workspace
+                  type: String
+                  value: cf-aws-org-Agrp-sandbox
+                - name: Agent_Name
+                  type: String
+                  value: aws
+                - name: Project
+                  type: String
+                  value: ICD-CloudFoundation
+                - name: TF_Vars_path
+                  type: String
+                  value: terraform.tfvars
+      - stage:
+          identifier: terraformplan
+          template:
+            templateInputs:
+              type: CI
+              spec:
+                execution:
+                  steps:
+                    - step:
+                        identifier: TFC_Config
+                        type: Run
+                        spec:
+                          envVariables: {}
+              variables:
+                - name: workspace
+                  type: String
+                  value: cf-aws-org-Agrp-sandbox
+                - name: Directory
+                  type: String
+                  value: controltower-sandbox
+                - name: TFC_Action
+                  type: String
+                  value: apply
+                - name: TFC_API_TOKEN
+                  type: Secret
+                  value: tfc_icd_cf
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>

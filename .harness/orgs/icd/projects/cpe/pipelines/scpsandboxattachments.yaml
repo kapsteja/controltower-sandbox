@@ -1,0 +1,73 @@
+pipeline:
+  name: scp-sandbox-attachments
+  identifier: scpsandboxattachments
+  projectIdentifier: cpe
+  orgIdentifier: icd
+  description: >
+    Sandbox Team Pipeline - Manages SCP attachments for controltower-sandbox accounts.
+    Policy definitions are managed by the Admin pipeline (miscpgovernance).
+  tags:
+    team: sandbox
+    scope: attachments
+  stages:
+    - stage:
+        name: create-workspace
+        identifier: createworkspace
+        template:
+          templateRef: account.TFC_workspace
+          versionLabel: 1.0.1
+          gitBranch: main
+          templateInputs:
+            type: CI
+            variables:
+              - name: TF_API_TOKEN
+                type: Secret
+                value: <+input>
+              - name: Workspace
+                type: String
+                value: cf-aws-org-Agrp-sandbox
+              - name: Agent_Name
+                type: String
+                value: <+input>.default(aws).allowedValues(aws,azure,ali)
+              - name: Project
+                type: String
+                value: <+input>
+              - name: TF_Vars_path
+                type: String
+                value: <+input>
+    - stage:
+        name: terraform-plan
+        identifier: terraformplan
+        template:
+          templateRef: account.Terraform_Cloud
+          versionLabel: 2.0.1
+          templateInputs:
+            type: CI
+            spec:
+              execution:
+                steps:
+                  - step:
+                      identifier: TFC_Config
+                      type: Run
+                      spec:
+                        envVariables: <+input>
+            variables:
+              - name: workspace
+                type: String
+                value: cf-aws-org-Agrp-sandbox
+              - name: Directory
+                type: String
+                value: controltower-sandbox
+              - name: TFC_Action
+                type: String
+                value: <+input>.executionInput().allowedValues(plan-only,apply,destroy)
+              - name: TFC_API_TOKEN
+                type: Secret
+                value: <+input>
+  properties:
+    ci:
+      codebase:
+        connectorRef: org.giticdpubliccloud
+        repoName: mi-scp-governance
+        build: <+input>
+        sparseCheckout: []

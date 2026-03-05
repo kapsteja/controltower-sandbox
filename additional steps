@@ -1,0 +1,20 @@
+need to remove from statefile
+
+terraform state rm 'aws_organizations_policy_attachment.attach["DenyMarketplaceAccessToAcceptOffers_007710834192"]'
+terraform state rm 'aws_organizations_policy_attachment.attach["DenyMarketplaceAccessToAcceptOffers_339712829092"]'
+terraform state rm 'aws_organizations_policy_attachment.attach["DenyStnoTagUpdates_007710834192"]'
+terraform state rm 'aws_organizations_policy_attachment.attach["Please_Do_not_touch_-_Merged_Encryption_DR_007710834192"]'
+terraform state rm 'aws_organizations_policy_attachment.attach["Deny-EC2-VOL-ELB-RDS-SNAPSHOTS-Without-Tags-CT-OCP_339712829092"]'
+
+and need to remove the account ids from main.tfvars
+
+Remove the handed-off account IDs from admin terraform.tfvars:
+
+In the admin attachments map, remove these specific account IDs so admin pipeline won't try to recreate them:
+
+DenyMarketplaceAccessToAcceptOffers — remove "007710834192" and "339712829092" (keep all other accounts)
+DenyStnoTagUpdates — remove "007710834192" (keep all other accounts)
+Deny-EC2-VOL-ELB-RDS-SNAPSHOTS-Without-Tags-CT-OCP — remove "339712829092" (keep "395040865592")
+Please_Do_not_touch_-_Merged_Encryption_DR — remove "007710834192" (list becomes empty)
+
+![alt text](image.png)

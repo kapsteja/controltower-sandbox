@@ -1,69 +1,47 @@
-variable "scp_files" {
-  description = "List of SCP JSON files to deploy"
-  type        = list(string)
-}
+# =============================================================================
+# Variables — Controltower Sandbox (Attachments Only)
+# =============================================================================
 
 variable "attachments" {
-  description = "Map of SCP name to list of target IDs (OUs or accounts)"
-  type        = map(list(string))
-  default     = {}
+  description = <<-EOT
+    Map of SCP policy name (without .json) to list of sandbox target IDs.
+    Policy names must match those created in the admin root workspace.
+    Example:
+      attachments = {
+        "DenyPublicS3Buckets" = ["123456789012"]
+      }
+  EOT
+  type    = map(list(string))
+  default = {}
 }
 
 variable "account_id" {
- type      = string
- default   = "648695786025"
+  type    = string
+  default = "648695786025"
 }
 
 variable "region" {
- type      = string
- default   = "us-east-1"
+  type    = string
+  default = "us-east-1"
 }
+
 variable "AAP_PUBLIC_KEY" {
- type    = string
- default = null
+  type    = string
+  default = null
 }
+
 variable "AAP_TOKEN" {
- type    = string
- default = null
- sensitive = true
+  type      = string
+  default   = null
+  sensitive = true
 }
+
 variable "ANSIBLE_PUBLIC_KEY" {
- type    = string
- default = null
+  type    = string
+  default = null
 }
+
 variable "JOB_TEMPLATE_ID" {
- type    = string
- default = null
-}
-variable "policy_extra_tags" {
- type    = map(map(string))
- default = {}
-}
-variable "policy_tags" {
- description = "Default tags to apply to all SCP policies"
- type = map(string)
- default = {
-   ManagedBy = "Terraform"
- }
-}
-variable "policy_specific_tags" {
- description = "Map of policy name (without .json) to specific tags for that policy"
- type = map(map(string))
- default = {}
-}
-variable "sandbox_ou_id" {
- type        = string
- description = "Organizations OU ID for ControlTowerSandbox"
-}
-variable "policy_definitions" {
- description = "Map of SCPs to create/manage in sandbox OU"
- type = map(object({
-   description  = string
-   content_file = string
-   enabled      = bool
- }))
-}
-variable "policy_attachments" {
- description = "Map of policy name -> list of targets (OU/account IDs)"
- type        = map(list(string))
+  type    = string
+  default = null
 }
