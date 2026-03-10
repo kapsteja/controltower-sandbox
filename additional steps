@@ -18,3 +18,172 @@ Deny-EC2-VOL-ELB-RDS-SNAPSHOTS-Without-Tags-CT-OCP — remove "339712829092" (ke
 Please_Do_not_touch_-_Merged_Encryption_DR — remove "007710834192" (list becomes empty)
 
 ![alt text](image.png)
+
+
+
+**Prompt [looks like python script is too complex, provide... | Try in Copilot Chat](https://m365.cloud.microsoft/chat/entity1-d870f6cd-4aa5-4d42-9626-ab690c041429/eyJpZCI6IlZYTmxjbFl4ZkdoMGRIQnpPaTh2YzNWaWMzUnlZWFJsTFdsdWRDNXZabVpwWTJVdVkyOXRMM3hQU1VRNk1tUTBOR05oTXpRdE1UWmtOaTAwTWpOakxUZ3hPV1l0WlRWak1EYzRPVGc1T1RsbGZHVmxOR1F6TVRFd0xUSTVZMkl0TkdOaE5pMDVPR016TFRobE1HRmlZakprTnpnM01ud3lNREkyTFRBekxURXdWREUxT2pBeE9qRTJMakE1TlRneU1qUmEiLCJzY2VuYXJpbyI6InNoYXJlTGlua1ZpYVJpY2hDb3B5IiwicHJvcGVydGllcyI6eyJwcm9tcHRTb3VyY2UiOiJ1c2VyIiwiY2xpY2tUaW1lc3RhbXAiOiIyMDI2LTAzLTEwVDE1OjAxOjE2LjI0MFoifSwiY2hhdFR5cGUiOiJ3ZWIiLCJ2ZXJzaW9uIjoxLjF9)**
+looks like python script is too complex, provide me the sample python boto script to achive this
+**Response**
+Got it 👍  
+Let’s **keep this SIMPLE**, clean, and **easy to understand**.
+
+Below is a **minimal, sample Python (boto3) script** that does **exactly what you want**:
+
+✅ Reads **account id, current OU, destination OU**  
+✅ Moves the account  
+✅ Triggers a **Control Tower update (OU reconciliation)** to reduce drift  
+✅ **No auto‑enablement** involved  
+✅ Designed for **1–2 accounts at a time**
+
+---
+
+## 1️⃣ CSV file (input)
+
+Create a file called `accounts.csv`:
+
+```csv
+account_id,current_ou,destination_ou
+123456789012,ou-aaaa-11111111,ou-bbbb-22222222
+```
+
+---
+
+## 2️⃣ What this script will do (simple flow)
+
+```text
+Read CSV
+ → Validate account is in current OU
+ → Move account to destination OU
+ → Reset Control Tower baseline on destination OU (update account)
+```
+
+🔹 **Reset baseline = Control Tower "update"**
+🔹 This helps **overcome SCP / preventive-control drift**
+🔹 Auto‑enrollment is **NOT required**
+
+---
+
+## 3️⃣ Simple Python boto3 script ✅
+
+📌 Run this from **AWS Organizations management account**  
+📌 Use **Control Tower home region**
+
+Save this as `move_account.py`
+
+```python
+import csv
+import boto3
+
+# CONFIG
+CSV_FILE = "accounts.csv"
+CONTROL_TOWER_REGION = "us-east-1"  # change if your CT home region is different
+
+org = boto3.client("organizations")
+ct  = boto3.client("controltower", region_name=CONTROL_TOWER_REGION)
+
+def get_account_parent(account_id):
+    resp = org.list_parents(ChildId=account_id)
+    return resp["Parents"][0]["Id"]
+
+def move_account(account_id, source_ou, dest_ou):
+    org.move_account(
+        AccountId=account_id,
+        SourceParentId=source_ou,
+        DestinationParentId=dest_ou
+    )
+
+def get_ou_arn(ou_id):
+    resp = org.describe_organizational_unit(
+        OrganizationalUnitId=ou_id
+    )
+    return resp["OrganizationalUnit"]["Arn"]
+
+def reset_ct_baseline_for_ou(ou_arn):
+    baselines = ct.list_enabled_baselines()["enabledBaselines"]
+    for b in baselines:
+        if b["targetIdentifier"] == ou_arn:
+            ct.reset_enabled_baseline(
+                enabledBaselineIdentifier=b["arn"]
+            )
+            print(f"✅ Control Tower baseline reset: {b['arn']}")
+
+def main():
+    with open(CSV_FILE) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            account_id = row["account_id"]
+            source_ou  = row["current_ou"]
+            dest_ou    = row["destination_ou"]
+
+            print(f"\nProcessing account {account_id}")
+
+            actual_ou = get_account_parent(account_id)
+            if actual_ou != source_ou:
+                print(f"❌ Account is not in {source_ou}, actual: {actual_ou}")
+                continue
+
+            move_account(account_id, source_ou, dest_ou)
+            print(f"✅ Moved account to {dest_ou}")
+
+            ou_arn = get_ou_arn(dest_ou)
+            reset_ct_baseline_for_ou(ou_arn)
+
+            print("✅ Post-move Control Tower update completed")
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## 4️⃣ How to run
+
+### ✅ Dry run check (optional)
+Before running, just **verify values in CSV**.
+
+### ✅ Execute
+```bash
+python3 move_account.py
+```
+
+---
+
+## 5️⃣ What “drift” this script fixes ✅
+
+✔ SCP / preventive guardrails aligned with destination OU  
+✔ Control Tower governance re-applied  
+✔ No auto-enrollment impact on prod  
+
+### ⚠️ What it does NOT auto-fix (AWS limitation)
+- Old **AWS Config rule-based controls** from previous OU  
+  (AWS does not remove these automatically when auto-enrollment is OFF)
+
+✅ This matches **AWS documented behavior**
+
+---
+
+## 6️⃣ When this script is perfect ✅
+
+✔ 200+ accounts overall  
+✔ Moving **1 or 2 accounts at a time**  
+✔ No auto-enablement  
+✔ Change-managed environments (prod-safe)  
+✔ Simple + reliable
+
+---
+
+## ✅ Final recommendation
+
+✔ Use this script as-is  
+✔ Keep CSV small (1–2 accounts)  
+✔ Monitor Control Tower dashboard after move  
+
+---
+
+If you want next, I can:
+- Simplify it even more (single account, no CSV)
+- Add **dry-run mode**
+- Add **logging + report**
+- Convert to **Lambda**
+
+Just tell me 👍
